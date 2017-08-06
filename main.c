@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 #include <SDL2_ttf/SDL_ttf.h>
+#include "cpu/memorymodule.h"
+#include "cpu/interpreter.h"
 
 // GBA screen ratio 3:2
 #define VP_WIDTH 536

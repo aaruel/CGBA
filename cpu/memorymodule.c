@@ -38,6 +38,13 @@ static uint8_t  _sm_reg_a = 0, \
 static uint16_t _sm_reg_pc = 0, \
                 _sm_reg_sp = 0;
 
+/*
+ *  Z80 Special Registers
+ */
+
+static uint8_t  _sm_reg_halt = 0, \
+                _sm_reg_stop = 0;
+
 ///////**** Public ****///////
 
 /*
@@ -130,3 +137,6 @@ void sm_inc_reg_sp(uint16_t inc ) { _sm_reg_sp += inc; }
 
 uint16_t sm_get_reg_pc() { return _sm_reg_pc; }
 uint16_t sm_get_reg_sp() { return _sm_reg_sp; }
+
+void sm_set_reg_halt(uint8_t b) { _sm_reg_halt = b; }
+void sm_set_reg_stop(uint8_t b) { _sm_reg_stop = b; }

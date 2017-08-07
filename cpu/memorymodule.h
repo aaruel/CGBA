@@ -64,5 +64,7 @@ void sm_set_reg_sp(uint16_t data);
 void sm_inc_reg_sp(uint16_t inc );
 uint16_t sm_get_reg_pc();
 uint16_t sm_get_reg_sp();
+void sm_set_reg_halt(uint8_t b);
+void sm_set_reg_stop(uint8_t b);
 
 #endif /* defined(__CGBA__statemachine__) */

@@ -28,6 +28,9 @@
 #define HALFWORD 0x2
 #define WORD     0x4
 
+#define TRUE  1
+#define FALSE 0
+
 #include <stdio.h>
 
 void ip_execute(uint8_t opcode);

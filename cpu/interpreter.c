@@ -153,6 +153,7 @@ void _ip_ADD_rr_rr(sm_regs e1, sm_regs e2, sm_regs e3, sm_regs e4) {
 // OPCODE DEFINITIONS
 // http://pastraiser.com/cpu/gameboy/gameboy_opcodes.html
 // http://imrannazar.com/Gameboy-Z80-Opcode-Map
+// http://www.devrs.com/gb/files/opcodes.html
 // 0x00
 void _ip_NOP() {
     sm_inc_clock(1);
@@ -241,10 +242,48 @@ void _ip_RRC_A() {
     sm_inc_clock(1);
 }
 
+// 0x10 // undefined
+void _ip_STOP() {
+    sm_set_reg_stop(TRUE);
+    // pause program
+    printf("STOP or UNDEFINED command called");
+    getchar();
+}
+
+// 0x11
+void _ip_LD_DE_d16() {
+    _ip_LD_rr_nn(REG_D, REG_E);
+}
+
+// 0x12
+void _ip_LD_dDE_A() {
+    _ip_LD_drr_r(REG_D, REG_E, REG_A);
+}
+
+// 0x13
+void _ip_INC_DE() {
+    _ip_INC_rr(REG_D, REG_E);
+}
+
+// 0x14
+void _ip_INC_D() {
+    _ip_INC_r(REG_D);
+}
+
+// 0x15
+void _ip_DEC_D() {
+    _ip_DEC_r(REG_D);
+}
+
+// 0x16
+void _ip_LD_D_d8() {
+    _ip_LD_r_n(REG_D);
+}
+
 // opcode map
 static void (*_ip_opcodes[])() = {
-    /* 0x */ _ip_NOP, _ip_LD_BC_d16, _ip_LD_dBC_A, _ip_INC_BC, _ip_INC_B, _ip_DEC_B, _ip_LD_B_d8, _ip_RLC_A, _ip_LD_da16_SP, _ip_ADD_HL_BC, _ip_LD_A_dBC, _ip_DEC_BC, _ip_INC_C, _ip_DEC_C, _ip_LD_C_d8, _ip_RRC_A,
-    /* 1x */
+    /* 0x */ _ip_NOP,  _ip_LD_BC_d16, _ip_LD_dBC_A, _ip_INC_BC, _ip_INC_B, _ip_DEC_B, _ip_LD_B_d8, _ip_RLC_A, _ip_LD_da16_SP, _ip_ADD_HL_BC, _ip_LD_A_dBC, _ip_DEC_BC, _ip_INC_C, _ip_DEC_C, _ip_LD_C_d8, _ip_RRC_A,
+    /* 1x */ _ip_STOP, _ip_LD_DE_d16, _ip_LD_dDE_A, _ip_INC_DE, _ip_INC_D, _ip_DEC_D, _ip_LD_D_d8
 };
 
 ///////**** Public ****///////

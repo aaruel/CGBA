@@ -52,6 +52,104 @@ static inline void _ip_apply_flags(uint8_t init, uint32_t condition, flag_check 
 }
 
 
+// OPCODE Types
+
+/*
+ * LOADS
+ */
+
+// LD 8bit reg, 8bit reg
+void _ip_LD_r_r(sm_regs e1, sm_regs e2) {
+    sm_set_reg(e1, e2);
+    sm_inc_clock(1);
+}
+
+// LD 8bit reg, 8bit num
+void _ip_LD_r_n(sm_regs e1) {
+    sm_set_reg(e1, sm_getmemaddr8(sm_get_reg_pc()));
+    sm_inc_reg_pc(1);
+    sm_inc_clock(2);
+}
+
+// LD (16bit regs) , 8bit num
+void _ip_LD_drr_n(sm_regs e1, sm_regs e2) {
+    sm_setmemaddr8( sm_get_reg16(e1, e2), sm_getmemaddr8( sm_get_reg_pc() ) );
+    sm_inc_clock(3);
+}
+
+// LD (16bit regs) , 8bit reg
+void _ip_LD_drr_r(sm_regs e1, sm_regs e2, sm_regs e3) {
+    sm_setmemaddr8( sm_get_reg16(e1, e2), sm_get_reg(e3) );
+    sm_inc_clock(2);
+}
+
+// LD 8bit reg, (16bit regs)
+void _ip_LD_r_drr(sm_regs e1, sm_regs e2, sm_regs e3) {
+    sm_set_reg(e1, sm_getmemaddr16(sm_get_reg16(e2, e3)));
+    sm_inc_clock(2);
+}
+
+// LD 16bit regs , 16bit num
+void _ip_LD_rr_nn(sm_regs e1, sm_regs e2) {
+    sm_set_reg( e2, sm_getmemaddr8( sm_get_reg_pc() ) );
+    sm_set_reg( e1, sm_getmemaddr8( sm_get_reg_pc() + BYTE ) );
+    sm_inc_reg_pc(2);
+    sm_inc_clock(3);
+}
+
+/*
+ * INC
+ */
+
+// INC 8bit reg
+void _ip_INC_r(sm_regs e1) {
+    const uint8_t r = sm_get_reg(e1);
+    sm_set_reg(e1, r + 1);
+    _ip_apply_flags(sm_get_reg(REG_F)&0b0001, r + 1, CHECK_ZERO | CHECK_HCARRY );
+    sm_inc_clock(1);
+}
+
+// INC 16bit regs
+void _ip_INC_rr(sm_regs e1, sm_regs e2) {
+    const uint16_t rr = sm_get_reg16(e1, e2) + 1;
+    sm_set_reg(e1, rr >> 8);
+    sm_set_reg(e2, rr & 0xFF);
+    sm_inc_clock(1);
+}
+
+/*
+ * DEC
+ */
+
+// DEC 8bit reg
+void _ip_DEC_r(sm_regs e1) {
+    const uint8_t r = sm_get_reg(e1);
+    sm_set_reg(e1, r - 1);
+    _ip_apply_flags(sm_get_reg(REG_F)&0b0101, r - 1, CHECK_ZERO | CHECK_OP | CHECK_HCARRY );
+    sm_inc_clock(1);
+}
+
+// DEC 16bit regs
+void _ip_DEC_rr(sm_regs e1, sm_regs e2) {
+    sm_set_reg16(e1, e2, sm_get_reg16(e1, e2) - 1);
+    sm_inc_clock(2);
+}
+
+/*
+ * ADD
+ */
+
+// ADD 16bit regs, 16bit regs
+void _ip_ADD_rr_rr(sm_regs e1, sm_regs e2, sm_regs e3, sm_regs e4) {
+    const uint16_t rr1 = sm_get_reg16(e1, e2);
+    const uint16_t rr2 = sm_get_reg16(e3, e4);
+    sm_set_reg16(REG_H, REG_L, rr1+rr2);
+    _ip_apply_flags(sm_get_reg(REG_F)&0b1000, rr1+rr2, CHECK_HCARRY | CHECK_CARRY );
+    sm_inc_clock(2);
+}
+
+
+
 // OPCODE DEFINITIONS
 // http://pastraiser.com/cpu/gameboy/gameboy_opcodes.html
 // http://imrannazar.com/Gameboy-Z80-Opcode-Map
@@ -62,47 +160,32 @@ void _ip_NOP() {
 
 // 0x01
 void _ip_LD_BC_d16() {
-    sm_set_reg( REG_C, sm_getmemaddr8( sm_get_reg_pc() ) );
-    sm_set_reg( REG_B, sm_getmemaddr8( sm_get_reg_pc() + BYTE ) );
-    sm_inc_reg_pc(2);
-    sm_inc_clock(3);
+    _ip_LD_rr_nn(REG_B, REG_C);
 }
 
 // 0x02
 void _ip_LD_dBC_A() {
-    sm_setmemaddr8( sm_get_reg16(REG_B, REG_C), sm_get_reg(REG_A) );
-    sm_inc_clock(2);
+    _ip_LD_drr_r(REG_B, REG_C, REG_A);
 }
 
 // 0x03
 void _ip_INC_BC() {
-    const uint16_t BC = sm_get_reg16(REG_B, REG_C) + 1;
-    sm_set_reg(REG_B, BC >> 8);
-    sm_set_reg(REG_C, BC & 0xFF);
-    sm_inc_clock(1);
+    _ip_INC_rr(REG_B, REG_C);
 }
 
 // 0x04
 void _ip_INC_B() {
-    const uint8_t B = sm_get_reg(REG_B);
-    sm_set_reg(REG_B, B + 1);
-    _ip_apply_flags(sm_get_reg(REG_F)&0b0001, B + 1, CHECK_ZERO | CHECK_HCARRY );
-    sm_inc_clock(1);
+    _ip_INC_r(REG_B);
 }
 
 // 0x05
 void _ip_DEC_B() {
-    const uint8_t B = sm_get_reg(REG_B);
-    sm_set_reg(REG_B, B - 1);
-    _ip_apply_flags(sm_get_reg(REG_F)&0b0101, B - 1, CHECK_ZERO | CHECK_OP | CHECK_HCARRY );
-    sm_inc_clock(1);
+    _ip_DEC_r(REG_B);
 }
 
 // 0x06
 void _ip_LD_B_d8() {
-    sm_set_reg(REG_B, sm_getmemaddr8(sm_get_reg_pc()));
-    sm_inc_reg_pc(1);
-    sm_inc_clock(2);
+    _ip_LD_r_n(REG_B);
 }
 
 // 0x07
@@ -122,46 +205,32 @@ void _ip_LD_da16_SP() {
 
 // 0x09
 void _ip_ADD_HL_BC() {
-    const uint16_t HL = sm_get_reg16(REG_H, REG_L);
-    const uint16_t BC = sm_get_reg16(REG_B, REG_C);
-    sm_set_reg16(REG_H, REG_L, HL+BC);
-    _ip_apply_flags(sm_get_reg(REG_F)&0b1000, HL+BC, CHECK_HCARRY | CHECK_CARRY );
-    sm_inc_clock(2);
+    _ip_ADD_rr_rr(REG_H, REG_L, REG_B, REG_C);
 }
 
 // 0x0A
 void _ip_LD_A_dBC() {
-    sm_set_reg(REG_A, sm_getmemaddr16(sm_get_reg16(REG_B, REG_C)));
-    sm_inc_clock(2);
+    _ip_LD_r_drr(REG_A, REG_B, REG_C);
 }
 
 // 0x0B
 void _ip_DEC_BC() {
-    sm_set_reg16(REG_B, REG_C, sm_get_reg16(REG_B, REG_C) - 1);
-    sm_inc_clock(2);
+    _ip_DEC_rr(REG_B, REG_C);
 }
 
 // 0x0C
 void _ip_INC_C() {
-    const uint8_t C = sm_get_reg(REG_C);
-    sm_set_reg(REG_C, C + 1);
-    _ip_apply_flags(sm_get_reg(REG_F)&0b0001, C + 1, CHECK_ZERO | CHECK_HCARRY);
-    sm_inc_clock(1);
+    _ip_INC_r(REG_C);
 }
 
 // 0x0D
 void _ip_DEC_C() {
-    const uint8_t C = sm_get_reg(REG_C);
-    sm_set_reg(REG_C, C - 1);
-    _ip_apply_flags(sm_get_reg(REG_F)&0b0001, C - 1, CHECK_ZERO | CHECK_OP | CHECK_HCARRY);
-    sm_inc_clock(1);
+    _ip_DEC_r(REG_C);
 }
 
 // 0x0E
 void _ip_LD_C_d8() {
-    sm_set_reg(REG_C, sm_getmemaddr8(sm_get_reg_pc()));
-    sm_inc_reg_pc(1);
-    sm_inc_clock(2);
+    _ip_LD_r_n(REG_C);
 }
 
 // 0x0F

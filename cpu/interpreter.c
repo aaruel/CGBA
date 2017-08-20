@@ -41,6 +41,20 @@ static inline uint16_t _ip_rotr16 (uint16_t n, uint8_t c) {
     return (n>>c) | (n<<( (-c)&mask ));
 }
 
+static inline uint16_t _ip_rotlc (uint8_t n) {
+    return ((uint16_t) n) << 1;
+}
+
+static inline uint16_t _ip_rotrc (uint8_t n) {
+    uint16_t nn = (uint16_t)n;
+    if (nn & 1) {
+        return (nn >> 1) | 0x100;
+    }
+    else {
+        return (nn >> 1);
+    }
+}
+
 // note: 32bit arg for carry checking
 static inline void _ip_apply_flags(uint8_t init, uint32_t condition, flag_check flags) {
     uint8_t f = init;
@@ -147,7 +161,6 @@ void _ip_ADD_rr_rr(sm_regs e1, sm_regs e2, sm_regs e3, sm_regs e4) {
     _ip_apply_flags(sm_get_reg(REG_F)&0b1000, rr1+rr2, CHECK_HCARRY | CHECK_CARRY );
     sm_inc_clock(2);
 }
-
 
 
 // OPCODE DEFINITIONS
@@ -280,10 +293,64 @@ void _ip_LD_D_d8() {
     _ip_LD_r_n(REG_D);
 }
 
+// 0x17
+void _ip_RLA() {
+    const uint8_t A = sm_get_reg(REG_A);
+    sm_set_reg(REG_A, _ip_rotlc(A));
+    _ip_apply_flags(0b0000, _ip_rotlc(A), CHECK_CARRY);
+    sm_inc_clock(1);
+}
+
+// 0x18
+void _ip_JR_r8() {
+    const int8_t r8 = (int8_t)sm_get_reg_pc();
+    const uint8_t pc = sm_get_reg_pc() + BYTE;
+    sm_set_reg_pc(pc + r8);
+    sm_inc_clock(3);
+}
+
+// 0x19
+void _ip_ADD_HL_DE() {
+    _ip_ADD_rr_rr(REG_H, REG_L, REG_D, REG_E);
+}
+
+// 0x1A
+void _ip_LD_A_dDE() {
+    _ip_LD_r_drr(REG_A, REG_D, REG_E);
+}
+
+// 0x1B
+void _ip_DEC_DE() {
+    _ip_DEC_rr(REG_D, REG_E);
+}
+
+// 0x1C
+void _ip_INC_E() {
+    _ip_INC_r(REG_E);
+}
+
+// 0x1D
+void _ip_DEC_E() {
+    _ip_DEC_r(REG_E);
+}
+
+// 0x1E
+void _ip_LD_E_d8() {
+    _ip_LD_r_n(REG_E);
+}
+
+// 0x1F
+void _ip_RRA() {
+    const uint8_t A = sm_get_reg(REG_A);
+    sm_set_reg(REG_A, _ip_rotrc(A));
+    _ip_apply_flags(0b0000, _ip_rotrc(A), CHECK_CARRY);
+    sm_inc_clock(1);
+}
+
 // opcode map
 static void (*_ip_opcodes[])() = {
     /* 0x */ _ip_NOP,  _ip_LD_BC_d16, _ip_LD_dBC_A, _ip_INC_BC, _ip_INC_B, _ip_DEC_B, _ip_LD_B_d8, _ip_RLC_A, _ip_LD_da16_SP, _ip_ADD_HL_BC, _ip_LD_A_dBC, _ip_DEC_BC, _ip_INC_C, _ip_DEC_C, _ip_LD_C_d8, _ip_RRC_A,
-    /* 1x */ _ip_STOP, _ip_LD_DE_d16, _ip_LD_dDE_A, _ip_INC_DE, _ip_INC_D, _ip_DEC_D, _ip_LD_D_d8
+    /* 1x */ _ip_STOP, _ip_LD_DE_d16, _ip_LD_dDE_A, _ip_INC_DE, _ip_INC_D, _ip_DEC_D, _ip_LD_D_d8, _ip_RLA,   _ip_JR_r8,      _ip_ADD_HL_DE, _ip_LD_A_dDE, _ip_DEC_DE, _ip_INC_E, _ip_DEC_E, _ip_LD_E_d8, _ip_RRA
 };
 
 ///////**** Public ****///////

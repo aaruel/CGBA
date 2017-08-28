@@ -162,6 +162,33 @@ void _ip_ADD_rr_rr(sm_regs e1, sm_regs e2, sm_regs e3, sm_regs e4) {
     sm_inc_clock(2);
 }
 
+/*
+ * JUMP
+ */
+
+// JR r8
+void _ip_JR_r8() {
+    const int8_t r8 = (int8_t)sm_get_reg_pc();
+    const uint8_t pc = sm_get_reg_pc() + BYTE;
+    sm_set_reg_pc(pc + r8);
+    sm_inc_clock(3);
+}
+
+// JR chk flag, r8
+void _ip_JR_f_r8(flag_check flags, uint8_t flag_invert /* For the NZ case */) {
+    const uint8_t f = (sm_get_reg(REG_F)) & flags;
+    if (flag_invert && !f) {
+        // calls across instructions
+        _ip_JR_r8();
+    }
+    else if (f) {
+        _ip_JR_r8();
+    }
+    else {
+        sm_inc_clock(2);
+    }
+}
+
 
 // OPCODE DEFINITIONS
 // http://pastraiser.com/cpu/gameboy/gameboy_opcodes.html
@@ -302,12 +329,7 @@ void _ip_RLA() {
 }
 
 // 0x18
-void _ip_JR_r8() {
-    const int8_t r8 = (int8_t)sm_get_reg_pc();
-    const uint8_t pc = sm_get_reg_pc() + BYTE;
-    sm_set_reg_pc(pc + r8);
-    sm_inc_clock(3);
-}
+// TYPE CALL ABOVE
 
 // 0x19
 void _ip_ADD_HL_DE() {
@@ -347,10 +369,108 @@ void _ip_RRA() {
     sm_inc_clock(1);
 }
 
+// 0x20
+void _ip_JR_NZ_r8() {
+    _ip_JR_f_r8(CHECK_ZERO, TRUE);
+}
+
+// 0x21
+void _ip_LD_HL_d16() {
+    _ip_LD_rr_nn(REG_H, REG_L);
+}
+
+// 0x22
+void _ip_LD_HLp_A() {
+    _ip_LD_drr_r(REG_H, REG_L, REG_A);
+}
+
+// 0x23
+void _ip_INC_HL() {
+    _ip_INC_rr(REG_H, REG_L);
+}
+
+// 0x24
+void _ip_INC_H() {
+    _ip_INC_r(REG_H);
+}
+
+// 0x25
+void _ip_DEC_H() {
+    _ip_DEC_r(REG_H);
+}
+
+// 0x26
+void _ip_LD_H_d8() {
+    _ip_LD_r_n(REG_H);
+}
+
+// 0x27
+void _ip_DAA() {
+    const uint8_t A = sm_get_reg(REG_A);
+    const uint8_t F = sm_get_reg(REG_F);
+    uint16_t r = 0;
+    if ((A & 0x0F) > 9 || F & CHECK_HCARRY) {
+        r = A + 0x06;
+        sm_set_reg(REG_A, r);
+    }
+    else if ((A & 0xF0) > 9 || F & CHECK_CARRY) {
+        r = A + 0x60;
+        sm_set_reg(REG_A, r);
+    }
+    _ip_apply_flags(sm_get_reg(REG_F) & 0b0100, r, CHECK_ZERO | CHECK_CARRY);
+    sm_inc_clock(1);
+}
+
+// 0x28
+void _ip_JR_Z_r8() {
+    _ip_JR_f_r8(CHECK_ZERO, FALSE);
+}
+
+// 0x29
+void _ip_ADD_HL_HL() {
+    _ip_ADD_rr_rr(REG_H, REG_L, REG_H, REG_L);
+}
+
+// 0x2A
+void _ip_LD_A_dHL() {
+    _ip_LD_r_drr(REG_A, REG_H, REG_L);
+}
+
+// 0x2B
+void _ip_DEC_HL() {
+    _ip_DEC_rr(REG_H, REG_L);
+}
+
+// 0x2C
+void _ip_INC_L() {
+    _ip_INC_r(REG_L);
+}
+
+// 0x2D
+void _ip_DEC_L() {
+    _ip_DEC_r(REG_L);
+}
+
+// 0x2E
+void _ip_LD_L_d8() {
+    _ip_LD_r_n(REG_L);
+}
+
+// 0x2F
+void _ip_CPL() {
+    const uint8_t A = sm_get_reg(REG_A);
+    const uint8_t F = sm_get_reg(REG_F);
+    sm_set_reg(REG_A, ~A);
+    _ip_apply_flags(F | 0b0110, 0, 0);
+    sm_inc_clock(1);
+}
+
+
 // opcode map
 static void (*_ip_opcodes[])() = {
-    /* 0x */ _ip_NOP,  _ip_LD_BC_d16, _ip_LD_dBC_A, _ip_INC_BC, _ip_INC_B, _ip_DEC_B, _ip_LD_B_d8, _ip_RLC_A, _ip_LD_da16_SP, _ip_ADD_HL_BC, _ip_LD_A_dBC, _ip_DEC_BC, _ip_INC_C, _ip_DEC_C, _ip_LD_C_d8, _ip_RRC_A,
-    /* 1x */ _ip_STOP, _ip_LD_DE_d16, _ip_LD_dDE_A, _ip_INC_DE, _ip_INC_D, _ip_DEC_D, _ip_LD_D_d8, _ip_RLA,   _ip_JR_r8,      _ip_ADD_HL_DE, _ip_LD_A_dDE, _ip_DEC_DE, _ip_INC_E, _ip_DEC_E, _ip_LD_E_d8, _ip_RRA
+    /* 0x */ _ip_NOP, _ip_LD_BC_d16, _ip_LD_dBC_A, _ip_INC_BC, _ip_INC_B, _ip_DEC_B, _ip_LD_B_d8, _ip_RLC_A, _ip_LD_da16_SP, _ip_ADD_HL_BC, _ip_LD_A_dBC, _ip_DEC_BC, _ip_INC_C, _ip_DEC_C, _ip_LD_C_d8, _ip_RRC_A,
+    /* 1x */ _ip_STOP, _ip_LD_DE_d16, _ip_LD_dDE_A, _ip_INC_DE, _ip_INC_D, _ip_DEC_D, _ip_LD_D_d8, _ip_RLA, _ip_JR_r8, _ip_ADD_HL_DE, _ip_LD_A_dDE, _ip_DEC_DE, _ip_INC_E, _ip_DEC_E, _ip_LD_E_d8, _ip_RRA,
+    /* 2x */ _ip_JR_NZ_r8, _ip_LD_HL_d16, _ip_LD_HLp_A, _ip_INC_HL, _ip_INC_H, _ip_LD_H_d8, _ip_DAA, _ip_JR_Z_r8, _ip_ADD_HL_HL, _ip_LD_A_dHL, _ip_DEC_HL, _ip_INC_L, _ip_DEC_L, _ip_LD_L_d8, _ip_CPL
 };
 
 ///////**** Public ****///////

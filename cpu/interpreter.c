@@ -103,10 +103,18 @@ void _ip_LD_r_drr(sm_regs e1, sm_regs e2, sm_regs e3) {
     sm_inc_clock(2);
 }
 
-// LD 16bit regs , 16bit num
+// LD 16bit regs, 16bit num
 void _ip_LD_rr_nn(sm_regs e1, sm_regs e2) {
     sm_set_reg( e2, sm_getmemaddr8( sm_get_reg_pc() ) );
     sm_set_reg( e1, sm_getmemaddr8( sm_get_reg_pc() + BYTE ) );
+    sm_inc_reg_pc(2);
+    sm_inc_clock(3);
+}
+
+// LD special reg, 16bit num
+void _ip_LD_special_nn(void(*setter)(uint16_t)) {
+    const uint16_t nn = sm_getmemaddr16(sm_get_reg_pc());
+    (*setter)(nn);
     sm_inc_reg_pc(2);
     sm_inc_clock(3);
 }
@@ -131,6 +139,21 @@ void _ip_INC_rr(sm_regs e1, sm_regs e2) {
     sm_inc_clock(1);
 }
 
+// INC (16bit regs)
+void _ip_INC_drr(sm_regs e1, sm_regs e2) {
+    const uint16_t rr = sm_get_reg16(e1, e2);
+    const uint16_t nn = sm_getmemaddr16(rr);
+    sm_setmemaddr16(rr, nn + 1);
+    _ip_apply_flags(sm_get_reg(REG_F)&0b0001, nn + 1, CHECK_ZERO | CHECK_HCARRY );
+}
+
+// INC special
+void _ip_INC_special(uint16_t(*getter)(), void(*setter)(uint16_t)) {
+    const uint16_t rr = (*getter)() + 1;
+    (*setter)(rr);
+    sm_inc_clock(1);
+}
+
 /*
  * DEC
  */
@@ -149,6 +172,21 @@ void _ip_DEC_rr(sm_regs e1, sm_regs e2) {
     sm_inc_clock(2);
 }
 
+// DEC (16bit regs)
+void _ip_DEC_drr(sm_regs e1, sm_regs e2) {
+    const uint16_t rr = sm_get_reg16(e1, e2);
+    const uint16_t nn = sm_getmemaddr16(rr);
+    sm_setmemaddr16(rr, nn - 1);
+    _ip_apply_flags(sm_get_reg(REG_F)&0b0101, nn - 1, CHECK_ZERO | CHECK_OP | CHECK_HCARRY );
+}
+
+// DEC special
+void _ip_DEC_special(uint16_t(*getter)(), void(*setter)(uint16_t)) {
+    const uint16_t rr = (*getter)() - 1;
+    (*setter)(rr);
+    sm_inc_clock(1);
+}
+
 /*
  * ADD
  */
@@ -157,6 +195,15 @@ void _ip_DEC_rr(sm_regs e1, sm_regs e2) {
 void _ip_ADD_rr_rr(sm_regs e1, sm_regs e2, sm_regs e3, sm_regs e4) {
     const uint16_t rr1 = sm_get_reg16(e1, e2);
     const uint16_t rr2 = sm_get_reg16(e3, e4);
+    sm_set_reg16(REG_H, REG_L, rr1+rr2);
+    _ip_apply_flags(sm_get_reg(REG_F)&0b1000, rr1+rr2, CHECK_HCARRY | CHECK_CARRY );
+    sm_inc_clock(2);
+}
+
+// ADD 16bit regs, special
+void _ip_ADD_rr_special(sm_regs e1, sm_regs e2, uint16_t(*getter)()) {
+    const uint16_t rr1 = sm_get_reg16(e1, e2);
+    const uint16_t rr2 = (*getter)();
     sm_set_reg16(REG_H, REG_L, rr1+rr2);
     _ip_apply_flags(sm_get_reg(REG_F)&0b1000, rr1+rr2, CHECK_HCARRY | CHECK_CARRY );
     sm_inc_clock(2);
@@ -380,8 +427,9 @@ void _ip_LD_HL_d16() {
 }
 
 // 0x22
-void _ip_LD_HLp_A() {
+void _ip_LD_dHLp_A() {
     _ip_LD_drr_r(REG_H, REG_L, REG_A);
+    _ip_INC_rr(REG_H, REG_L);
 }
 
 // 0x23
@@ -465,12 +513,95 @@ void _ip_CPL() {
     sm_inc_clock(1);
 }
 
+// 0x30
+void _ip_JR_NC_r8() {
+    _ip_JR_f_r8(CHECK_CARRY, TRUE);
+}
+
+// 0x31
+void _ip_LD_SP_d16() {
+    _ip_LD_special_nn(sm_set_reg_sp);
+}
+
+// 0x32
+void _ip_LD_dHLd_A() {
+    _ip_LD_drr_r(REG_H, REG_L, REG_A);
+    _ip_DEC_rr(REG_H, REG_L);
+}
+
+// 0x33
+void _ip_INC_SP() {
+    _ip_INC_special(sm_get_reg_sp, sm_set_reg_sp);
+}
+
+// 0x34
+void _ip_INC_dHL() {
+    _ip_INC_drr(REG_H, REG_L);
+}
+
+// 0x35
+void _ip_DEC_dHL() {
+    _ip_DEC_drr(REG_H, REG_L);
+}
+
+// 0x36
+void _ip_LD_dHL_d8() {
+    _ip_LD_drr_n(REG_H, REG_L);
+}
+
+// 0x37
+void _ip_SCF() {
+    _ip_apply_flags(sm_get_reg(REG_F) | F_CARRY, 0, 0);
+}
+
+// 0x38
+void _ip_JR_C_r8() {
+    _ip_JR_f_r8(CHECK_CARRY, FALSE);
+}
+
+// 0x39
+void _ip_ADD_HL_SP() {
+    _ip_ADD_rr_special(REG_H, REG_L, sm_get_reg_sp);
+}
+
+// 0x3A
+void _ip_LD_A_dHLd() {
+    _ip_LD_r_drr(REG_A, REG_H, REG_L);
+    _ip_DEC_rr(REG_H, REG_L);
+}
+
+// 0x3B
+void _ip_DEC_SP() {
+    _ip_DEC_special(sm_get_reg_sp, sm_set_reg_sp);
+}
+
+// 0x3C
+void _ip_INC_A() {
+    _ip_INC_r(REG_A);
+}
+
+// 0x3D
+void _ip_DEC_A() {
+    _ip_DEC_r(REG_A);
+}
+
+// 0x3E
+void _ip_LD_A_d8() {
+    _ip_LD_r_n(REG_A);
+}
+
+// 0x3F
+void _ip_CCF() {
+    _ip_apply_flags(sm_get_reg(REG_F) & (~F_CARRY), 0, 0);
+}
+
 
 // opcode map
 static void (*_ip_opcodes[])() = {
     /* 0x */ _ip_NOP, _ip_LD_BC_d16, _ip_LD_dBC_A, _ip_INC_BC, _ip_INC_B, _ip_DEC_B, _ip_LD_B_d8, _ip_RLC_A, _ip_LD_da16_SP, _ip_ADD_HL_BC, _ip_LD_A_dBC, _ip_DEC_BC, _ip_INC_C, _ip_DEC_C, _ip_LD_C_d8, _ip_RRC_A,
     /* 1x */ _ip_STOP, _ip_LD_DE_d16, _ip_LD_dDE_A, _ip_INC_DE, _ip_INC_D, _ip_DEC_D, _ip_LD_D_d8, _ip_RLA, _ip_JR_r8, _ip_ADD_HL_DE, _ip_LD_A_dDE, _ip_DEC_DE, _ip_INC_E, _ip_DEC_E, _ip_LD_E_d8, _ip_RRA,
-    /* 2x */ _ip_JR_NZ_r8, _ip_LD_HL_d16, _ip_LD_HLp_A, _ip_INC_HL, _ip_INC_H, _ip_LD_H_d8, _ip_DAA, _ip_JR_Z_r8, _ip_ADD_HL_HL, _ip_LD_A_dHL, _ip_DEC_HL, _ip_INC_L, _ip_DEC_L, _ip_LD_L_d8, _ip_CPL
+    /* 2x */ _ip_JR_NZ_r8, _ip_LD_HL_d16, _ip_LD_dHLp_A, _ip_INC_HL, _ip_INC_H, _ip_DEC_H, _ip_LD_H_d8, _ip_DAA, _ip_JR_Z_r8, _ip_ADD_HL_HL, _ip_LD_A_dHL, _ip_DEC_HL, _ip_INC_L, _ip_DEC_L, _ip_LD_L_d8, _ip_CPL,
+    /* 3x */ _ip_JR_NC_r8, _ip_LD_SP_d16, _ip_LD_dHLd_A, _ip_INC_SP, _ip_INC_dHL, _ip_DEC_dHL, _ip_LD_dHL_d8, _ip_SCF, _ip_JR_C_r8, _ip_ADD_HL_SP, _ip_LD_A_dHLd, _ip_DEC_SP, _ip_INC_A, _ip_DEC_A, _ip_LD_A_d8, _ip_CCF,
 };
 
 ///////**** Public ****///////

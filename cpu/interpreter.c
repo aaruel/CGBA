@@ -254,6 +254,54 @@ void _ip_ADC_r_drr(sm_regs e1, sm_regs e2, sm_regs e3) {
 }
 
 /*
+ * SUB
+ */
+
+// SUB 8bit reg, 8bit reg
+void _ip_SUB_r_r(sm_regs e1, sm_regs e2) {
+    const uint16_t r1 = sm_get_reg(e1);
+    const uint16_t r2 = sm_get_reg(e2);
+    sm_set_reg(e1, r1-r2);
+    _ip_apply_flags(0, r1-r2, CHECK_OP | CHECK_HCARRY | CHECK_CARRY | CHECK_ZERO );
+    sm_inc_clock(1);
+}
+
+// SUB 8bit reg, (16bit reg)
+void _ip_SUB_r_drr(sm_regs e1, sm_regs e2, sm_regs e3) {
+    const uint16_t rr = sm_get_reg16(e2, e3);
+    const uint16_t r = sm_get_reg(e1);
+    const uint16_t n = sm_getmemaddr16(rr);
+    sm_set_reg(e1, n-r);
+    _ip_apply_flags(0, n-r, CHECK_OP | CHECK_ZERO | CHECK_HCARRY | CHECK_CARRY);
+    sm_inc_clock(2);
+}
+
+/*
+ * SBC
+ */
+
+// SBC 8bit reg, 8bit reg
+void _ip_SBC_r_r(sm_regs e1, sm_regs e2) {
+    const uint16_t r1 = sm_get_reg(e1);
+    const uint16_t r2 = sm_get_reg(e2);
+    const uint8_t c = sm_get_reg(REG_F) & F_CARRY ? 1 : 0;
+    sm_set_reg(e1, r1-r2-c);
+    _ip_apply_flags(0, r1-r2-c, CHECK_OP | CHECK_HCARRY | CHECK_CARRY | CHECK_ZERO );
+    sm_inc_clock(1);
+}
+
+// SBC 8bit reg, (16bit reg)
+void _ip_SBC_r_drr(sm_regs e1, sm_regs e2, sm_regs e3) {
+    const uint16_t rr = sm_get_reg16(e2, e3);
+    const uint16_t r = sm_get_reg(e1);
+    const uint16_t n = sm_getmemaddr16(rr);
+    const uint8_t c = sm_get_reg(REG_F) & F_CARRY ? 1 : 0;
+    sm_set_reg(e1, n-r-c);
+    _ip_apply_flags(0, n-r-c, CHECK_OP | CHECK_ZERO | CHECK_HCARRY | CHECK_CARRY);
+    sm_inc_clock(2);
+}
+
+/*
  * JUMP
  */
 
@@ -1043,6 +1091,86 @@ void _ip_ADC_A_A() {
     _ip_ADC_r_r(REG_A, REG_A);
 }
 
+// 0x90
+void _ip_SUB_A_B() {
+    _ip_SUB_r_r(REG_A, REG_B);
+}
+
+// 0x91
+void _ip_SUB_A_C() {
+    _ip_SUB_r_r(REG_A, REG_C);
+}
+
+// 0x92
+void _ip_SUB_A_D() {
+    _ip_SUB_r_r(REG_A, REG_D);
+}
+
+// 0x93
+void _ip_SUB_A_E() {
+    _ip_SUB_r_r(REG_A, REG_E);
+}
+
+// 0x94
+void _ip_SUB_A_H() {
+    _ip_SUB_r_r(REG_A, REG_H);
+}
+
+// 0x95
+void _ip_SUB_A_L() {
+    _ip_SUB_r_r(REG_A, REG_L);
+}
+
+// 0x96
+void _ip_SUB_A_dHL() {
+    _ip_SUB_r_drr(REG_A, REG_H, REG_L);
+}
+
+// 0x97
+void _ip_SUB_A_A() {
+    _ip_SUB_r_r(REG_A, REG_A);
+}
+
+// 0x98
+void _ip_SBC_A_B() {
+    _ip_SBC_r_r(REG_A, REG_B);
+}
+
+// 0x99
+void _ip_SBC_A_C() {
+    _ip_SBC_r_r(REG_A, REG_C);
+}
+
+// 0x9A
+void _ip_SBC_A_D() {
+    _ip_SBC_r_r(REG_A, REG_D);
+}
+
+// 0x9B
+void _ip_SBC_A_E() {
+    _ip_SBC_r_r(REG_A, REG_E);
+}
+
+// 0x9C
+void _ip_SBC_A_H() {
+    _ip_SBC_r_r(REG_A, REG_H);
+}
+
+// 0x9D
+void _ip_SBC_A_L() {
+    _ip_SBC_r_r(REG_A, REG_L);
+}
+
+// 0x9E
+void _ip_SBC_A_dHL() {
+    _ip_SBC_r_drr(REG_A, REG_H, REG_L);
+}
+
+// 0x9F
+void _ip_SBC_A_A() {
+    _ip_SBC_r_r(REG_A, REG_A);
+}
+
 
 // opcode map
 static void (*_ip_opcodes[])() = {
@@ -1055,6 +1183,7 @@ static void (*_ip_opcodes[])() = {
     /* 6x */ _ip_LD_H_B, _ip_LD_H_C, _ip_LD_H_D, _ip_LD_H_E, _ip_LD_H_H, _ip_LD_H_L, _ip_LD_H_dHL, _ip_LD_H_A, _ip_LD_L_B, _ip_LD_L_C, _ip_LD_L_D, _ip_LD_L_E, _ip_LD_L_H, _ip_LD_L_L, _ip_LD_L_dHL, _ip_LD_L_A,
     /* 7x */ _ip_LD_dHL_B, _ip_LD_dHL_C, _ip_LD_dHL_D, _ip_LD_dHL_E, _ip_LD_dHL_H, _ip_LD_dHL_L, _ip_HALT, _ip_LD_dHL_A, _ip_LD_A_B, _ip_LD_A_C, _ip_LD_A_D, _ip_LD_A_E, _ip_LD_A_H, _ip_LD_A_L, _ip_LD_A_dHL, _ip_LD_A_A,
     /* 8x */ _ip_ADD_A_B, _ip_ADD_A_C, _ip_ADD_A_D, _ip_ADD_A_E, _ip_ADD_A_H, _ip_ADD_A_L, _ip_ADD_A_dHL, _ip_ADD_A_A, _ip_ADC_A_B, _ip_ADC_A_C, _ip_ADC_A_D, _ip_ADC_A_E, _ip_ADC_A_H, _ip_ADC_A_L, _ip_ADC_A_dHL, _ip_ADC_A_A,
+    /* 9x */ _ip_SUB_A_B, _ip_SUB_A_C, _ip_SUB_A_D, _ip_SUB_A_E, _ip_SUB_A_H, _ip_SUB_A_L, _ip_SUB_A_dHL, _ip_SUB_A_A, _ip_SBC_A_B, _ip_SBC_A_C, _ip_SBC_A_D, _ip_SBC_A_E, _ip_SBC_A_H, _ip_SBC_A_L, _ip_SBC_A_dHL, _ip_SBC_A_A,
 };
 
 ///////**** Public ****///////

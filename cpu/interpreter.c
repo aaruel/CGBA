@@ -595,6 +595,86 @@ void _ip_CCF() {
     _ip_apply_flags(sm_get_reg(REG_F) & (~F_CARRY), 0, 0);
 }
 
+// 0x40
+void _ip_LD_B_B() {
+    _ip_LD_r_r(REG_B, REG_B);
+}
+
+// 0x41
+void _ip_LD_B_C() {
+    _ip_LD_r_r(REG_B, REG_C);
+}
+
+// 0x42
+void _ip_LD_B_D() {
+    _ip_LD_r_r(REG_B, REG_D);
+}
+
+// 0x43
+void _ip_LD_B_E() {
+    _ip_LD_r_r(REG_B, REG_E);
+}
+
+// 0x44
+void _ip_LD_B_H() {
+    _ip_LD_r_r(REG_B, REG_H);
+}
+
+// 0x45
+void _ip_LD_B_L() {
+    _ip_LD_r_r(REG_B, REG_L);
+}
+
+// 0x46
+void _ip_LD_B_dHL() {
+    _ip_LD_r_drr(REG_B, REG_H, REG_L);
+}
+
+// 0x47
+void _ip_LD_B_A() {
+    _ip_LD_r_r(REG_B, REG_A);
+}
+
+// 0x48
+void _ip_LD_C_B() {
+    _ip_LD_r_r(REG_C, REG_B);
+}
+
+// 0x49
+void _ip_LD_C_C() {
+    _ip_LD_r_r(REG_C, REG_C);
+}
+
+// 0x4A
+void _ip_LD_C_D() {
+    _ip_LD_r_r(REG_C, REG_D);
+}
+
+// 0x4B
+void _ip_LD_C_E() {
+    _ip_LD_r_r(REG_C, REG_E);
+}
+
+// 0x4C
+void _ip_LD_C_H() {
+    _ip_LD_r_r(REG_C, REG_H);
+}
+
+// 0x4D
+void _ip_LD_C_L() {
+    _ip_LD_r_r(REG_C, REG_L);
+}
+
+// 0x4E
+void _ip_LD_C_dHL() {
+    _ip_LD_r_drr(REG_C, REG_H, REG_L);
+}
+
+// 0x4F
+void _ip_LD_C_A() {
+    _ip_LD_r_r(REG_C, REG_A);
+}
+
 
 // opcode map
 static void (*_ip_opcodes[])() = {
@@ -602,6 +682,7 @@ static void (*_ip_opcodes[])() = {
     /* 1x */ _ip_STOP, _ip_LD_DE_d16, _ip_LD_dDE_A, _ip_INC_DE, _ip_INC_D, _ip_DEC_D, _ip_LD_D_d8, _ip_RLA, _ip_JR_r8, _ip_ADD_HL_DE, _ip_LD_A_dDE, _ip_DEC_DE, _ip_INC_E, _ip_DEC_E, _ip_LD_E_d8, _ip_RRA,
     /* 2x */ _ip_JR_NZ_r8, _ip_LD_HL_d16, _ip_LD_dHLp_A, _ip_INC_HL, _ip_INC_H, _ip_DEC_H, _ip_LD_H_d8, _ip_DAA, _ip_JR_Z_r8, _ip_ADD_HL_HL, _ip_LD_A_dHL, _ip_DEC_HL, _ip_INC_L, _ip_DEC_L, _ip_LD_L_d8, _ip_CPL,
     /* 3x */ _ip_JR_NC_r8, _ip_LD_SP_d16, _ip_LD_dHLd_A, _ip_INC_SP, _ip_INC_dHL, _ip_DEC_dHL, _ip_LD_dHL_d8, _ip_SCF, _ip_JR_C_r8, _ip_ADD_HL_SP, _ip_LD_A_dHLd, _ip_DEC_SP, _ip_INC_A, _ip_DEC_A, _ip_LD_A_d8, _ip_CCF,
+    /* 4x */ _ip_LD_B_B, _ip_LD_B_C, _ip_LD_B_D, _ip_LD_B_E, _ip_LD_B_H, _ip_LD_B_L, _ip_LD_B_dHL, _ip_LD_B_A, _ip_LD_C_B, _ip_LD_C_C, _ip_LD_C_D, _ip_LD_C_E, _ip_LD_C_H, _ip_LD_C_L, _ip_LD_C_dHL, _ip_LD_C_A,
 };
 
 ///////**** Public ****///////

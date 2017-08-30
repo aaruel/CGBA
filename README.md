@@ -1,5 +1,7 @@
 # CGBA
 
+![GameBoy](http://i.imgur.com/ZuoOotE.gif)
+
 Build with SDL2.framework and SDL2_ttf.framework
 
 Header Dependencies: 

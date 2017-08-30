@@ -302,6 +302,52 @@ void _ip_SBC_r_drr(sm_regs e1, sm_regs e2, sm_regs e3) {
 }
 
 /*
+ * AND
+ */
+
+// AND 8bit reg, 8bit reg
+void _ip_AND_r_r(sm_regs e1, sm_regs e2) {
+    const uint8_t r1 = sm_get_reg(e1);
+    const uint8_t r2 = sm_get_reg(e2);
+    sm_set_reg(e1, r1&r2);
+    _ip_apply_flags(0b00100000, r1&r2, CHECK_ZERO);
+    sm_inc_clock(1);
+}
+
+// AND 8bit reg, (16bit reg)
+void _ip_AND_r_drr(sm_regs e1, sm_regs e2, sm_regs e3) {
+    const uint16_t rr = sm_get_reg16(e2, e3);
+    const uint16_t r = sm_get_reg(e1);
+    const uint16_t n = sm_getmemaddr16(rr);
+    sm_set_reg(e1, n&r);
+    _ip_apply_flags(0b00100000, n&r, CHECK_ZERO);
+    sm_inc_clock(2);
+}
+
+/*
+ * AND
+ */
+
+// XOR 8bit reg, 8bit reg
+void _ip_XOR_r_r(sm_regs e1, sm_regs e2) {
+    const uint8_t r1 = sm_get_reg(e1);
+    const uint8_t r2 = sm_get_reg(e2);
+    sm_set_reg(e1, r1^r2);
+    _ip_apply_flags(0b00000000, r1^r2, CHECK_ZERO);
+    sm_inc_clock(1);
+}
+
+// XOR 8bit reg, (16bit reg)
+void _ip_XOR_r_drr(sm_regs e1, sm_regs e2, sm_regs e3) {
+    const uint16_t rr = sm_get_reg16(e2, e3);
+    const uint16_t r = sm_get_reg(e1);
+    const uint16_t n = sm_getmemaddr16(rr);
+    sm_set_reg(e1, n^r);
+    _ip_apply_flags(0b00000000, n^r, CHECK_ZERO);
+    sm_inc_clock(2);
+}
+
+/*
  * JUMP
  */
 
@@ -1171,6 +1217,86 @@ void _ip_SBC_A_A() {
     _ip_SBC_r_r(REG_A, REG_A);
 }
 
+// 0xA0
+void _ip_AND_A_B() {
+    _ip_AND_r_r(REG_A, REG_B);
+}
+
+// 0xA1
+void _ip_AND_A_C() {
+    _ip_AND_r_r(REG_A, REG_C);
+}
+
+// 0xA2
+void _ip_AND_A_D() {
+    _ip_AND_r_r(REG_A, REG_D);
+}
+
+// 0xA3
+void _ip_AND_A_E() {
+    _ip_AND_r_r(REG_A, REG_E);
+}
+
+// 0xA4
+void _ip_AND_A_H() {
+    _ip_AND_r_r(REG_A, REG_H);
+}
+
+// 0xA5
+void _ip_AND_A_L() {
+    _ip_AND_r_r(REG_A, REG_L);
+}
+
+// 0xA6
+void _ip_AND_A_dHL() {
+    _ip_AND_r_drr(REG_A, REG_H, REG_L);
+}
+
+// 0xA7
+void _ip_AND_A_A() {
+    _ip_AND_r_r(REG_A, REG_A);
+}
+
+// 0xA8
+void _ip_XOR_A_B() {
+    _ip_XOR_r_r(REG_A, REG_B);
+}
+
+// 0xA9
+void _ip_XOR_A_C() {
+    _ip_XOR_r_r(REG_A, REG_C);
+}
+
+// 0xAA
+void _ip_XOR_A_D() {
+    _ip_XOR_r_r(REG_A, REG_D);
+}
+
+// 0xAB
+void _ip_XOR_A_E() {
+    _ip_XOR_r_r(REG_A, REG_E);
+}
+
+// 0xAC
+void _ip_XOR_A_H() {
+    _ip_XOR_r_r(REG_A, REG_H);
+}
+
+// 0xAD
+void _ip_XOR_A_L() {
+    _ip_XOR_r_r(REG_A, REG_L);
+}
+
+// 0xAE
+void _ip_XOR_A_dHL() {
+    _ip_XOR_r_drr(REG_A, REG_H, REG_L);
+}
+
+// 0xAF
+void _ip_XOR_A_A() {
+    _ip_XOR_r_r(REG_A, REG_A);
+}
+
 
 // opcode map
 static void (*_ip_opcodes[])() = {
@@ -1184,6 +1310,7 @@ static void (*_ip_opcodes[])() = {
     /* 7x */ _ip_LD_dHL_B, _ip_LD_dHL_C, _ip_LD_dHL_D, _ip_LD_dHL_E, _ip_LD_dHL_H, _ip_LD_dHL_L, _ip_HALT, _ip_LD_dHL_A, _ip_LD_A_B, _ip_LD_A_C, _ip_LD_A_D, _ip_LD_A_E, _ip_LD_A_H, _ip_LD_A_L, _ip_LD_A_dHL, _ip_LD_A_A,
     /* 8x */ _ip_ADD_A_B, _ip_ADD_A_C, _ip_ADD_A_D, _ip_ADD_A_E, _ip_ADD_A_H, _ip_ADD_A_L, _ip_ADD_A_dHL, _ip_ADD_A_A, _ip_ADC_A_B, _ip_ADC_A_C, _ip_ADC_A_D, _ip_ADC_A_E, _ip_ADC_A_H, _ip_ADC_A_L, _ip_ADC_A_dHL, _ip_ADC_A_A,
     /* 9x */ _ip_SUB_A_B, _ip_SUB_A_C, _ip_SUB_A_D, _ip_SUB_A_E, _ip_SUB_A_H, _ip_SUB_A_L, _ip_SUB_A_dHL, _ip_SUB_A_A, _ip_SBC_A_B, _ip_SBC_A_C, _ip_SBC_A_D, _ip_SBC_A_E, _ip_SBC_A_H, _ip_SBC_A_L, _ip_SBC_A_dHL, _ip_SBC_A_A,
+    /* Ax */ _ip_AND_A_B, _ip_AND_A_C, _ip_AND_A_D, _ip_AND_A_E, _ip_AND_A_H, _ip_AND_A_L, _ip_AND_A_dHL, _ip_AND_A_A, _ip_XOR_A_B, _ip_XOR_A_C, _ip_XOR_A_D, _ip_XOR_A_E, _ip_XOR_A_H, _ip_XOR_A_L, _ip_XOR_A_dHL, _ip_XOR_A_A,
 };
 
 ///////**** Public ****///////

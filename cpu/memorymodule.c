@@ -43,7 +43,8 @@ static uint16_t _sm_reg_pc = 0, \
  */
 
 static uint8_t  _sm_reg_halt = 0, \
-                _sm_reg_stop = 0;
+                _sm_reg_stop = 0,
+                _sm_reg_intr = 0;
 
 ///////**** Public ****///////
 
@@ -140,3 +141,4 @@ uint16_t sm_get_reg_sp() { return _sm_reg_sp; }
 
 void sm_set_reg_halt(uint8_t b) { _sm_reg_halt = b; }
 void sm_set_reg_stop(uint8_t b) { _sm_reg_stop = b; }
+void sm_set_reg_intr(uint8_t b) { _sm_reg_intr = b; }
